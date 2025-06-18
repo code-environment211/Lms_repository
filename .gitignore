@@ -1,2 +1,3 @@
-LMS_Project.__pycache__
+LMS_Project/__pycache__
 db.sqlite3
+.gitignore
