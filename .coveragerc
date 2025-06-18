@@ -1,0 +1,13 @@
+[run]
+branch = True
+source =
+    LMS_APP
+
+[report]
+omit =
+    */tests/*
+    */migrations/*
+    */admin.py
+    */apps.py
+    */wsgi.py
+    */asgi.py
