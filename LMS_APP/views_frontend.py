@@ -27,13 +27,14 @@ def lecture_list_view(request, course_id):
     lectures = [lec for lec in all_lectures if lec.get('course') == course_id]
     return render(request, 'frontend/lectures.html', {'lectures': lectures})
 
-# @login_required
+
+
+@login_required
 def enrollment_list_view(request):
-    token = request.user.auth_token.key  # If using token auth
-    headers = {"Authorization": f"Token {token}"}
-    response = requests.get(f"{BASE_API_URL}/enrollments/", headers=headers)
-    enrollments = response.json() if response.status_code == 200 else []
-    return render(request, 'frontend/enrollments.html', {'enrollments': enrollments})
+    enrollments = Enrollment.objects.filter(student=request.user).select_related('course')
+    courses = [enrollment.course for enrollment in enrollments]
+    return render(request, 'frontend/enrollments.html', {'courses': courses})
+
 
 def homepage(request):
     return render(request, 'frontend/homepage.html')

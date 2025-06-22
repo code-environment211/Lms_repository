@@ -25,7 +25,7 @@ urlpatterns = [
     path('accounts/', include('allauth.urls')), 
     path('', include('LMS_APP.urls')),
     path('web/', include('LMS_APP.urls_frontend')),  # or your app name
-
+    path("__reload__/", include("django_browser_reload.urls")),
 
 ]
 if settings.DEBUG:
