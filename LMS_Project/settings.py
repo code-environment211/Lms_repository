@@ -38,8 +38,16 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
     'django_jenkins',
     'LMS_APP',
+]
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
 MIDDLEWARE = [
@@ -50,6 +58,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
+    
 ]
 
 ROOT_URLCONF = 'LMS_Project.urls'
@@ -130,3 +140,15 @@ JENKINS_TASKS = [
     'django_jenkins.tasks.with_coverage',
     'django_jenkins.tasks.django_tests',
 ]
+
+# static images :
+
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [ BASE_DIR / "static" ]
+
+
+
+SITE_ID = 1
+
+LOGIN_REDIRECT_URL = '/web/homepage/'
+LOGOUT_REDIRECT_URL = '/accounts/login/'

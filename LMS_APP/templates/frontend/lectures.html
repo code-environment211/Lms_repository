@@ -1,0 +1,21 @@
+{% extends "frontend/base.html" %}
+
+{% block title %}Lectures | LMS{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">All Lectures</h2>
+<div class="row">
+  {% for lecture in lectures %}
+    <div class="col-md-6 col-lg-4 mb-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body text-center">
+          <h5 class="card-title">{{ lecture.title }}</h5>
+          <a href="{{ lecture.video_url }}" target="_blank" class="btn btn-primary mt-3">Watch Video</a>
+        </div>
+      </div>
+    </div>
+  {% empty %}
+    <p class="text-muted">No lectures available at this time.</p>
+  {% endfor %}
+</div>
+{% endblock %}

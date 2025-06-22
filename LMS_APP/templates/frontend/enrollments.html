@@ -1,0 +1,22 @@
+{% extends "frontend/base.html" %}
+
+{% block title %}My Enrollments | LMS{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">My Enrollments</h2>
+<div class="row">
+  {% for enrollment in enrollments %}
+    <div class="col-md-6 col-lg-4 mb-4">
+      <div class="card border-success shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title">{{ enrollment.course }}</h5>
+          <p class="card-text">Enrolled On: {{ enrollment.enrolled_at|date:"F j, Y" }}</p>
+          <a href="/web/courses-page/" class="btn btn-outline-success">View Course</a>
+        </div>
+      </div>
+    </div>
+  {% empty %}
+    <div class="text-muted">You are not enrolled in any courses yet.</div>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends "frontend/base.html" %}
+{% load tz %}
+
+{% block title %}Welcome to LMS{% endblock %}
+
+{% block content %}
+<div class="text-center">
+  <h1 class="display-4">Welcome to Your Online LMS</h1>
+  <p class="lead mt-3">Access expert-led courses, engaging lectures, and personalized learning paths.</p>
+  <a href="/web/courses-page/" class="btn btn-primary btn-lg mt-4">Browse Courses</a>
+</div>
+
+<hr class="my-5">
+
+<div class="row text-center">
+  <div class="col-md-4">
+    <h4>Expert Instructors</h4>
+    <p>Learn from experienced professionals who are leaders in their fields.</p>
+  </div>
+  <section class="info-section bg-white">
+    <div class="container">
+      <div class="row align-items-center">
+        <div class="col-md-6 mb-4 mb-md-0">
+          <img src="https://media.istockphoto.com/id/1772396051/photo/lms-learning-management-system-teacher-using-laptop-for-online-lesson-and-online-education.jpg?s=612x612&w=0&k=20&c=-Xtdr_8RLiUVeQbrXUZhjASkGxsd2Z4RDL3_4f0bdH0=" alt="Learning Image">
+        </div>
+        <div class="col-md-6">
+          <h3>Interactive Lessons</h3>
+          <p>Our platform offers multimedia-rich content, discussion boards, and interactive quizzes to boost your learning journey.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="info-section">
+    <div class="container">
+      <div class="row align-items-center flex-md-row-reverse">
+        <div class="col-md-6 mb-4 mb-md-0">
+          <img src="https://educationalvoice.co.uk/wp-content/uploads/2024/11/image-162.jpeg" alt="Classroom Image">
+        </div>
+        <div class="col-md-6">
+          <h3>Track Your Progress</h3>
+          <p>Monitor your enrolled courses, watch lectures, and stay on top of your academic goals with visual feedback and dashboards.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="col-md-4">
+    <h4>Flexible Learning</h4>
+    <p>Access content anytime, anywhere. Learn at your own pace.</p>
+  </div>
+  <div class="col-md-4">
+    <h4>Track Progress</h4>
+    <p>Monitor your course enrollments and progress in real-time.</p>
+  </div>
+</div>
+{% endblock %}
