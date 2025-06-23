@@ -16,6 +16,9 @@
   <!-- Bootstrap Icons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
+  <!-- HTMX for real-time search -->
+  <script src="https://unpkg.com/htmx.org@1.9.6"></script>
+
   <!-- Favicon -->
   <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
 
@@ -196,6 +199,7 @@
     .hero-search {
       max-width: 100%;
       margin-bottom: 2rem;
+      position: relative;
     }
     
     .hero-search .form-control {
@@ -227,6 +231,60 @@
       background: white;
       transform: translateY(-2px);
       box-shadow: var(--shadow-lg);
+    }
+    
+    /* Search Results Dropdown */
+    .search-results-dropdown {
+      max-height: 400px;
+      overflow-y: auto;
+      border: 1px solid var(--gray-200);
+      z-index: 1050;
+      background: white;
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-xl);
+    }
+    
+    .search-result-item {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--gray-100);
+      transition: all var(--transition-fast);
+    }
+    
+    .search-result-item:hover, .search-result-item.active {
+      background-color: var(--gray-50);
+    }
+    
+    .search-result-item a {
+      color: var(--gray-800);
+      text-decoration: none;
+      display: block;
+    }
+    
+    .search-result-item:hover a {
+      color: var(--primary-color);
+    }
+    
+    .search-result-item .badge {
+      font-size: 0.75rem;
+      background-color: var(--primary-color);
+    }
+    
+    .no-results {
+      padding: 1rem;
+      color: var(--gray-500);
+      text-align: center;
+    }
+    
+    .search-loading {
+      display: flex;
+      justify-content: center;
+      padding: 1rem;
+    }
+    
+    .search-loading .spinner {
+      width: 1.5rem;
+      height: 1.5rem;
+      border-width: 0.2em;
     }
     
     .cta-btn {
@@ -512,35 +570,34 @@
     }
     
     .hero-illustration[src] {
-      background
-      : transparent;
+      background: transparent;
     }
 
     .feature-card {
-    background: white;
-    border-radius: 0.5rem;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-  }
-  
-  .feature-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-  }
-  
-  .info-section {
-    padding: 5rem 0;
-  }
-  
-  .info-section:nth-child(even) {
-    background-color: #f8f9fa;
-  }
-  
-  @media (max-width: 768px) {
-    .info-section {
-      padding: 3rem 0;
+      background: white;
+      border-radius: 0.5rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
-  }
+    
+    .feature-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+    }
+    
+    .info-section {
+      padding: 5rem 0;
+    }
+    
+    .info-section:nth-child(even) {
+      background-color: #f8f9fa;
+    }
+    
+    @media (max-width: 768px) {
+      .info-section {
+        padding: 3rem 0;
+      }
+    }
   </style>
 </head>
 {% load static %}
@@ -590,27 +647,35 @@
     </div>
   </nav>
 
-  <!-- Hero Section -->
+  <!-- Hero Section with Search -->
   <section class="hero-section" id="hero" role="banner">
     <div class="hero-inner">
       <div class="hero-content">
         <h1>Transform Your Learning Journey</h1>
         <p>Discover world-class courses from expert instructors. Learn at your own pace, anywhere, anytime.</p>
-        <form class="hero-search" action="/web/courses-page/" method="get" role="search">
-          <div class="d-flex">
+        <div class="hero-search">
+          <div class="d-flex position-relative">
             <input 
               class="form-control form-control-lg" 
               type="search" 
+              id="searchInput"
               name="q" 
               placeholder="Search for courses, topics, or instructors..." 
               aria-label="Search courses"
               autocomplete="off"
+              hx-get="/web/search-courses/"
+              hx-trigger="keyup changed delay:300ms"
+              hx-target="#searchResults"
+              hx-swap="innerHTML"
+              hx-indicator=".search-loading"
             >
             <button class="btn btn-lg ms-2" type="submit" aria-label="Search">
               <i class="bi bi-search"></i>
             </button>
+            <!-- Search results dropdown -->
+            <div id="searchResults" class="search-results-dropdown position-absolute top-100 start-0 w-100 mt-1 rounded shadow-lg z-10 d-none"></div>
           </div>
-        </form>
+        </div>
         <a href="/web/courses-page/" class="cta-btn">
           Explore Courses
           <i class="bi bi-arrow-right ms-2"></i>
@@ -684,121 +749,128 @@
   {% django_browser_reload_script %}
 
   <script>
-    // Enhanced Back to Top functionality
     document.addEventListener('DOMContentLoaded', function() {
       const backToTopBtn = document.getElementById('backToTopBtn');
-      let isScrolling = false;
+      const searchInput = document.getElementById('searchInput');
+      const searchResults = document.getElementById('searchResults');
       
-      // Throttled scroll handler for better performance
-      function handleScroll() {
-        if (!isScrolling) {
-          window.requestAnimationFrame(function() {
-            if (window.scrollY > 400) {
-              backToTopBtn.classList.add('show');
-            } else {
-              backToTopBtn.classList.remove('show');
-            }
-            isScrolling = false;
-          });
-          isScrolling = true;
+      // Back to Top functionality
+      if (backToTopBtn) {
+        let isScrolling = false;
+        
+        function handleScroll() {
+          if (!isScrolling) {
+            window.requestAnimationFrame(function() {
+              if (window.scrollY > 400) {
+                backToTopBtn.classList.add('show');
+              } else {
+                backToTopBtn.classList.remove('show');
+              }
+              isScrolling = false;
+            });
+            isScrolling = true;
+          }
         }
+        
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        
+        backToTopBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          const scrollToTop = () => {
+            const c = document.documentElement.scrollTop || document.body.scrollTop;
+            if (c > 0) {
+              window.requestAnimationFrame(scrollToTop);
+              window.scrollTo(0, c - c / 8);
+            }
+          };
+          scrollToTop();
+        });
       }
       
-      window.addEventListener('scroll', handleScroll, { passive: true });
-      
-      // Smooth scroll to top with easing
-      backToTopBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        
-        const scrollToTop = () => {
-          const c = document.documentElement.scrollTop || document.body.scrollTop;
-          if (c > 0) {
-            window.requestAnimationFrame(scrollToTop);
-            window.scrollTo(0, c - c / 8);
+      // Search functionality
+      if (searchInput && searchResults) {
+        // Show/hide results dropdown
+        searchInput.addEventListener('focus', function() {
+          if (this.value.trim() !== '') {
+            searchResults.classList.remove('d-none');
           }
-        };
-        scrollToTop();
-      });
-      
-      // Enhanced page reload handling
-      window.addEventListener('pageshow', function(event) {
-        if (event.persisted) {
-          window.location.reload();
-        }
-      });
-      
-      // Intersection Observer for lazy loading and animations
-      const observerOptions = {
-        root: null,
-        rootMargin: '50px',
-        threshold: 0.1
-      };
-      
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const element = entry.target;
+        });
+        
+        searchInput.addEventListener('blur', function() {
+          setTimeout(() => {
+            searchResults.classList.add('d-none');
+          }, 200);
+        });
+        
+        // Keyboard navigation in results
+        searchInput.addEventListener('keydown', function(e) {
+          if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            const items = searchResults.querySelectorAll('.search-result-item');
+            if (items.length === 0) return;
             
-            // Handle lazy loading
-            if (element.dataset.src) {
-              element.src = element.dataset.src;
-              element.removeAttribute('data-src');
+            let currentIndex = -1;
+            items.forEach((item, index) => {
+              if (item.classList.contains('active')) {
+                currentIndex = index;
+                item.classList.remove('active');
+              }
+            });
+            
+            if (e.key === 'ArrowDown') {
+              currentIndex = (currentIndex + 1) % items.length;
+            } else {
+              currentIndex = (currentIndex - 1 + items.length) % items.length;
             }
             
-            // Add animation class
-            element.classList.add('animate-in');
-            observer.unobserve(element);
+            items[currentIndex].classList.add('active');
+            items[currentIndex].scrollIntoView({ block: 'nearest' });
+          } else if (e.key === 'Enter') {
+            const activeItem = searchResults.querySelector('.search-result-item.active');
+            if (activeItem) {
+              window.location.href = activeItem.querySelector('a').href;
+            }
           }
         });
-      }, observerOptions);
-      
-      // Observe lazy load images
-      const lazyImages = document.querySelectorAll('img[data-src]');
-      lazyImages.forEach(img => observer.observe(img));
-      
-      // Enhanced form handling
-      const searchForm = document.querySelector('.hero-search form');
-      if (searchForm) {
-        const searchInput = searchForm.querySelector('input[type="search"]');
         
+        // Show results when typing
         searchInput.addEventListener('input', function() {
-          // Add search suggestions or validation here
-          this.classList.toggle('is-valid', this.value.length > 2);
-        });
-        
-        searchForm.addEventListener('submit', function(e) {
-          if (searchInput.value.trim().length < 2) {
-            e.preventDefault();
-            searchInput.focus();
-            searchInput.classList.add('is-invalid');
-            setTimeout(() => searchInput.classList.remove('is-invalid'), 3000);
+          if (this.value.trim() !== '') {
+            searchResults.classList.remove('d-none');
+          } else {
+            searchResults.classList.add('d-none');
           }
         });
       }
       
       // Navbar scroll effect
       const navbar = document.querySelector('.navbar');
-      let lastScrollY = window.scrollY;
-      
-      window.addEventListener('scroll', () => {
-        const currentScrollY = window.scrollY;
+      if (navbar) {
+        let lastScrollY = window.scrollY;
         
-        if (currentScrollY > 100) {
-          navbar.style.background = 'rgba(31, 41, 55, 0.98)';
-        } else {
-          navbar.style.background = 'rgba(31, 41, 55, 0.95)';
-        }
-        
-        lastScrollY = currentScrollY;
-      }, { passive: true });
+        window.addEventListener('scroll', () => {
+          const currentScrollY = window.scrollY;
+          
+          if (currentScrollY > 100) {
+            navbar.style.background = 'rgba(31, 41, 55, 0.98)';
+          } else {
+            navbar.style.background = 'rgba(31, 41, 55, 0.95)';
+          }
+          
+          lastScrollY = currentScrollY;
+        }, { passive: true });
+      }
       
       // Keyboard navigation improvements
       document.addEventListener('keydown', function(e) {
         // ESC key to close mobile menu
         if (e.key === 'Escape') {
           const navbarCollapse = document.querySelector('.navbar-collapse');
-          if (navbarCollapse.classList.contains('show')) {
-            bootstrap.Collapse.getInstance(navbarCollapse).hide();
+          if (navbarCollapse && navbarCollapse.classList.contains('show')) {
+            const bsCollapse = bootstrap.Collapse.getInstance(navbarCollapse);
+            if (bsCollapse) {
+              bsCollapse.hide();
+            }
           }
         }
         
@@ -813,17 +885,27 @@
         }
       });
       
-      // Performance monitoring
-      if ('performance' in window) {
-        window.addEventListener('load', function() {
-          setTimeout(function() {
-            const perfData = performance.getEntriesByType('navigation')[0];
-            if (perfData.loadEventEnd - perfData.loadEventStart > 3000) {
-              console.warn('Page load time is slow:', perfData.loadEventEnd - perfData.loadEventStart, 'ms');
-            }
-          }, 0);
-        });
-      }
+      // HTMX configuration
+      document.body.addEventListener('htmx:beforeRequest', function(evt) {
+        // Show loading indicator for search
+        if (evt.detail.elt === searchInput) {
+          searchResults.innerHTML = `
+            <div class="search-loading">
+              <div class="spinner-border text-primary spinner" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+            </div>
+          `;
+          searchResults.classList.remove('d-none');
+        }
+      });
+      
+      document.body.addEventListener('htmx:afterRequest', function(evt) {
+        // Hide results if empty after search
+        if (evt.detail.elt === searchInput && searchResults.innerHTML.trim() === '') {
+          searchResults.classList.add('d-none');
+        }
+      });
     });
     
     // Service Worker registration for PWA capabilities (optional)

@@ -1,9 +1,11 @@
 
 import requests
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, HttpResponse
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect
 from .models import Course, Enrollment
+from django.http import JsonResponse
+from django.template.loader import render_to_string
 
 BASE_API_URL = "http://127.0.0.1:8000"  # Adjust if hosted remotely
 
@@ -47,7 +49,31 @@ def enroll_course(request, course_id):
     return redirect('lecture_list', course_id=course.id)
 
 
-
-
 def login(request):
     return render(request, 'account/login_page.html')
+
+
+def search_courses(request):
+    query = request.GET.get('q', '').strip()
+    results = []
+    
+    if query:
+        courses = Course.objects.filter(
+            Q(title__icontains=query) | 
+            Q(description__icontains=query) |
+            Q(instructor__name__icontains=query)
+        )[:5]
+        
+        results = [{
+            'title': course.title,
+            'url': course.get_absolute_url(),
+            'instructor': course.instructor.name,
+            'category': course.category.name
+        } for course in courses]
+    
+    html = render_to_string('partials/search_results.html', {
+        'results': results,
+        'query': query
+    })
+    
+    return HttpResponse(html)
